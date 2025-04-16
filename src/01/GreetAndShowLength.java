@@ -18,8 +18,7 @@ public class GreetAndShowLength extends JFrame {
     }
 
     setTitle("こんにちは！" + name + "さん");
-    var charCount = name.length();
-    messageLabel.setText(charCount + "文字です");
+    messageLabel.setText(name.length() + "文字です");
   }
 
   public GreetAndShowLength() {
@@ -47,6 +46,6 @@ public class GreetAndShowLength extends JFrame {
   }
 
   public static void main(String[] args) {
-    SwingUtilities.invokeLater(() -> new GreetAndShowLength());
+    SwingUtilities.invokeLater(GreetAndShowLength::new);
   }
 }
