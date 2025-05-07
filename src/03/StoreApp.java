@@ -1,6 +1,34 @@
 import javax.swing.*;
 import java.awt.*;
 import java.util.stream.Stream;
+import java.util.List;
+
+class Receipt {
+  public ProductItem[] items;
+
+  public Receipt() {
+    this.items = new ProductItem[0];
+  }
+
+  public List<ProductItem> getAsList() {
+    return List.of(items);
+  }
+
+  public void addProduct(ProductItem item) {
+    var newItems = new java.util.ArrayList<>(this.getAsList());
+    newItems.add(item);
+    // ref: https://zenn.dev/goriki/articles/038-list-to-array#stream().toarray()
+    items = newItems.toArray(ProductItem[]::new);
+  }
+
+  public double getTotalPrice() {
+    return this.getAsList().stream().mapToDouble(ProductItem::getSubtotal).sum();
+  }
+
+  public int getTotalQuantity() {
+    return this.getAsList().stream().mapToInt(item -> item.quantity).sum();
+  }
+}
 
 class ProductItem {
   public final String productName;
@@ -26,7 +54,8 @@ class ProductItem {
   public static class FromStringError extends Exception {
     public enum Variant {
       CONTAINS_EMPTY("未入力項目があります。"),
-      INVALID_UNIT_OR_QUANTITY("単価と数量には正の数値を入力してください。");
+      INVALID_UNIT_OR_QUANTITY("単価と数量には正の数値を入力してください。"),
+      MALFORMED_NUMBER("数値形式が不正です。");
 
       public final String message;
 
@@ -52,8 +81,15 @@ class ProductItem {
       throw new FromStringError(FromStringError.Variant.CONTAINS_EMPTY);
     }
 
-    var unitPriceVal = Double.parseDouble(unitPrice);
-    var quantityVal = Integer.parseInt(quantity);
+    double unitPriceVal;
+    int quantityVal;
+    try {
+      unitPriceVal = Double.parseDouble(unitPrice);
+      quantityVal = Integer.parseInt(quantity);
+    } catch (NumberFormatException e) {
+      throw new FromStringError(FromStringError.Variant.MALFORMED_NUMBER);
+    }
+
     if (unitPriceVal <= 0 || quantityVal <= 0) {
       throw new FromStringError(FromStringError.Variant.INVALID_UNIT_OR_QUANTITY);
     }
@@ -80,9 +116,18 @@ public class StoreApp extends JFrame {
    */
   private JButton processButton;
   /**
+   * 合計結果の算出を実行するボタン
+   */
+  private JButton totalButton;
+  /**
    * 処理結果を表示するエリア
    */
   private JTextArea outputArea;
+
+  /**
+   * レシート
+   */
+  private Receipt receipt;
 
   private JPanel createTopPanel() {
     JPanel topPanel = new JPanel(new GridBagLayout());
@@ -93,7 +138,7 @@ public class StoreApp extends JFrame {
     createProductNameRow(topPanel, gbc);
     createUnitPriceRow(topPanel, gbc);
     createQuantityRow(topPanel, gbc);
-    createButtonRow(topPanel, gbc);
+    createProcessButtonRow(topPanel, gbc);
 
     return topPanel;
   }
@@ -167,7 +212,7 @@ public class StoreApp extends JFrame {
   /**
    * ボタンの行
    */
-  private void createButtonRow(JPanel panel, GridBagConstraints gbc) {
+  private void createProcessButtonRow(JPanel panel, GridBagConstraints gbc) {
     // ボタン (gridx=1, gridy=3) 右寄せで配置
     gbc.gridx = 1;
     gbc.gridy = 3;
@@ -184,6 +229,32 @@ public class StoreApp extends JFrame {
   private JScrollPane createOutputArea() {
     outputArea = new JTextArea();
     return new JScrollPane(outputArea);
+  }
+
+  private JPanel createBottomPanel() {
+    JPanel bottomPanel = new JPanel(new GridBagLayout());
+    GridBagConstraints gbc = new GridBagConstraints();
+    gbc.insets = new Insets(5, 5, 5, 5); // 部品間の余白
+    gbc.anchor = GridBagConstraints.WEST; // 左寄せを基本とする
+
+    createTotalButtonRow(bottomPanel, gbc);
+
+    return bottomPanel;
+  }
+
+  /**
+   * 合計ボタンの行
+   */
+  private void createTotalButtonRow(JPanel panel, GridBagConstraints gbc) {
+    // 合計ボタン (gridx=1, gridy=4) 右寄せで配置
+    gbc.gridx = 1;
+    gbc.gridy = 4;
+    // ref: https://chatgpt.com/share/680b07a8-1540-8003-bf93-dd0566fecce4
+    gbc.weightx = 1.0;
+    gbc.fill = GridBagConstraints.NONE;
+    gbc.anchor = GridBagConstraints.EAST; // ボタンを右端に寄せる
+    totalButton = new JButton("合計計算");
+    panel.add(totalButton, gbc);
   }
 
   private void clearInputFields() {
@@ -203,11 +274,14 @@ public class StoreApp extends JFrame {
   public StoreApp() {
     initWindow();
 
+    this.receipt = new Receipt();
     JPanel topPanel = createTopPanel();
     JScrollPane scrollPane = createOutputArea();
+    JPanel bottomPanel = createBottomPanel();
 
     add(topPanel, BorderLayout.NORTH);
     add(scrollPane, BorderLayout.CENTER);
+    add(bottomPanel, BorderLayout.SOUTH);
 
     processButton.addActionListener(__ -> {
       var productName = productNameField.getText();
@@ -219,11 +293,27 @@ public class StoreApp extends JFrame {
 
       try {
         var item = ProductItem.fromString(productName, unitPrice, quantity);
+        this.receipt.addProduct(item);
         outputArea.append(item.toString() + lineSeparator);
+
         clearInputFields();
+        this.productNameField.requestFocus();
       } catch (ProductItem.FromStringError e) {
         System.err.println(e.getMessage());
       }
+    });
+
+    totalButton.addActionListener(__ -> {
+      var lineSeparator = System.lineSeparator();
+      var totalQuantity = this.receipt.getTotalQuantity();
+      var totalPrice = this.receipt.getTotalPrice();
+
+      var text = String
+          .format(
+              "<ls>--- 合計点数: %d 点 ---<ls>--- 合計金額: %.0f 円 ---<ls><ls>",
+              totalQuantity, totalPrice)
+          .replaceAll("<ls>", lineSeparator);
+      outputArea.append(text);
     });
 
     setVisible(true);
