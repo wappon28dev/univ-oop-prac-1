@@ -53,17 +53,20 @@ public class LibraryMember {
     var canBorrow = this.canBorrowMore() && !book.isBorrowed();
 
     if (!canBorrow) {
+      var lineSeparator = System.lineSeparator();
       var msg = new StringBuilder();
 
+      msg.append("貸出できません (" + book.toStringInline() + ")" + lineSeparator);
+
       if (!this.canBorrowMore()) {
-        msg.append("貸出上限に達しています");
+        msg.append(" - 貸出上限に達しています" + lineSeparator);
       }
 
       if (book.isBorrowed()) {
-        msg.append("この本は既に貸出中です");
+        msg.append(" - この本は既に貸出中です" + lineSeparator);
       }
 
-      System.err.println(msg);
+      System.err.print(msg);
       return false;
     }
 
@@ -111,5 +114,9 @@ public class LibraryMember {
         this.maxBorrowLimit,
         this.getCurrentBorrowCount());
     System.out.println(msg);
+  }
+
+  public String toStringInline() {
+    return String.format("%s: %s さん", this.name, this.memberId);
   }
 }

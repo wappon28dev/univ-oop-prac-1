@@ -72,7 +72,7 @@ public class LibraryMain {
     var arr = new Book[] { book8, book9 };
     var borrowCount = member.borrowBooks(arr);
 
-    tryAssert(borrowCount == 2, "配列で2冊借りられる");
+    tryAssert(borrowCount == 3, "配列で2冊借りられる");
     tryAssert(member.getCurrentBorrowCount() == 2, "貸出冊数が2");
   }
 

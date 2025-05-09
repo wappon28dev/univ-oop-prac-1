@@ -1,5 +1,7 @@
 package jp.ac.ait.k24132.library;
 
+import java.util.List;
+
 public class Book {
   private final String isbn;
   private String title;
@@ -67,4 +69,26 @@ public class Book {
         this.isBorrowed ? "はい" : "いいえ")
         .replaceAll("<ls>", lineSeparator);
   }
+
+  public String toStringInline() {
+    return String.format("%s: 『%s』", this.isbn, this.title);
+  }
+
+  public static String listToString(List<Book> books, int indent) {
+    var bookDetails = books.stream().map(Book::getBookDetails).toList();
+    var systemSeparator = System.lineSeparator();
+    var spaces = " ".repeat(indent);
+    var indented = systemSeparator + spaces;
+
+    StringBuilder sb = new StringBuilder();
+    int count = 1;
+    for (var bookDetail : bookDetails) {
+      sb.append(spaces + "#" + count + "/" + bookDetails.size() + indented + " | ");
+      sb.append(bookDetail.replace(systemSeparator, indented + " | "));
+      sb.append(systemSeparator);
+      count++;
+    }
+    return sb.toString();
+  }
+
 }
