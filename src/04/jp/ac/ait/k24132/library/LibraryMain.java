@@ -12,6 +12,11 @@ public class LibraryMain {
   private Book book8 = new Book("9784106028212", "君たちはどう生きるか", "吉野源三郎");
   private Book book9 = new Book("9784004301302", "こころ", "夏目漱石");
 
+  private LibraryMember member0 = new LibraryMember("M001", "太郎");
+  private LibraryMember member1 = new LibraryMember("M002", "花子");
+  private LibraryMember member2 = new LibraryMember("M003", "次郎");
+  private LibraryMember memberWithLimit = new LibraryMember("M004", "三郎", 3);
+
   private void tryAssert(boolean condition, String message) {
     System.out.println("🧪 test: " + message);
     if (!condition) {
@@ -21,7 +26,7 @@ public class LibraryMain {
   }
 
   private void testSingleBorrow() {
-    var member = new LibraryMember("M001", "太郎");
+    var member = member0;
 
     tryAssert(member.getCurrentBorrowCount() == 0, "初期貸出冊数は0");
 
@@ -32,7 +37,7 @@ public class LibraryMain {
   }
 
   private void testMultipleBorrow() {
-    var member = new LibraryMember("M002", "花子");
+    var member = member1;
 
     var ok1 = member.borrowBook(book1);
     tryAssert(ok1, "1冊目OK");
@@ -42,19 +47,19 @@ public class LibraryMain {
   }
 
   private void testBorrowLimit() {
-    var member = new LibraryMember("M003", "次郎", 3);
+    var member = memberWithLimit;
 
     tryAssert(member.borrowBook(book3), "1冊目OK");
     tryAssert(member.borrowBook(book4), "2冊目OK");
     tryAssert(member.borrowBook(book5), "3冊目OK");
 
-    boolean ok = member.borrowBook(book6);
+    var ok = member.borrowBook(book6);
     tryAssert(!ok, "貸出上限超過でfalse");
     tryAssert(member.getCurrentBorrowCount() == 3, "貸出冊数はまだ3");
   }
 
   private void testReturnBook() {
-    var member = new LibraryMember("M004", "三郎");
+    var member = member2;
 
     member.borrowBook(book7);
     tryAssert(member.getCurrentBorrowCount() == 1, "借りた状態");
@@ -68,11 +73,11 @@ public class LibraryMain {
   }
 
   private void testBorrowBooksArray() {
-    var member = new LibraryMember("M005", "四郎", 10);
+    var member = member2;
     var arr = new Book[] { book8, book9 };
     var borrowCount = member.borrowBooks(arr);
 
-    tryAssert(borrowCount == 3, "配列で2冊借りられる");
+    tryAssert(borrowCount == 2, "配列で2冊借りられる");
     tryAssert(member.getCurrentBorrowCount() == 2, "貸出冊数が2");
   }
 
@@ -82,7 +87,7 @@ public class LibraryMain {
     testBorrowLimit();
     testReturnBook();
     testBorrowBooksArray();
-    System.out.println("done!");
+    System.out.println("🎉 どね");
   }
 
   public static void main(String[] args) {

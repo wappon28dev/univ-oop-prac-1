@@ -1,6 +1,7 @@
 package jp.ac.ait.k24132.library;
 
 import java.util.List;
+import java.util.function.Function;
 
 public class Book {
   private final String isbn;
@@ -10,18 +11,26 @@ public class Book {
 
   public Book(String isbn, String title, String author) {
     if (isbn == null || isbn.isEmpty()) {
+      this.isbn = "unknown";
       System.err.println("ISBN が `null` または空文字列です");
-    }
-    if (title == null || title.isEmpty()) {
-      System.err.println("タイトルが `null` または空文字列です");
-    }
-    if (author == null || author.isEmpty()) {
-      System.err.println("著者が `null` または空文字列です");
+    } else {
+      this.isbn = isbn;
     }
 
-    this.isbn = isbn;
-    this.title = title;
-    this.author = author;
+    if (title == null || title.isEmpty()) {
+      this.title = "unknown";
+      System.err.println("タイトルが `null` または空文字列です");
+    } else {
+      this.title = title;
+    }
+
+    if (author == null || author.isEmpty()) {
+      this.author = "unknown";
+      System.err.println("著者が `null` または空文字列です");
+    } else {
+      this.author = author;
+    }
+
   }
 
   public String getIsbn() {
@@ -52,6 +61,7 @@ public class Book {
 
   public boolean returnBook() {
     if (!this.isBorrowed) {
+      System.err.println("この本 (" + this.title + ") は貸出中ではありません");
       return false;
     }
 
@@ -74,21 +84,29 @@ public class Book {
     return String.format("%s: 『%s』", this.isbn, this.title);
   }
 
-  public static String listToString(List<Book> books, int indent) {
-    var bookDetails = books.stream().map(Book::getBookDetails).toList();
-    var systemSeparator = System.lineSeparator();
+  private static String formatBookList(List<Book> books, int indent, Function<Book, String> formatter) {
+    var sep = System.lineSeparator();
     var spaces = " ".repeat(indent);
-    var indented = systemSeparator + spaces;
-
-    StringBuilder sb = new StringBuilder();
-    int count = 1;
-    for (var bookDetail : bookDetails) {
-      sb.append(spaces + "#" + count + "/" + bookDetails.size() + indented + " | ");
-      sb.append(bookDetail.replace(systemSeparator, indented + " | "));
-      sb.append(systemSeparator);
-      count++;
+    var indentSep = sep + spaces;
+    var sb = new StringBuilder();
+    int size = books.size();
+    for (int i = 0; i < size; i++) {
+      var detail = formatter.apply(books.get(i));
+      sb.append(spaces)
+          .append("#").append(i + 1).append("/").append(size)
+          .append(indentSep).append(" | ")
+          .append(detail.replace(sep, indentSep + " | "))
+          .append(sep);
     }
     return sb.toString();
+  }
+
+  public static String listToString(List<Book> books, int indent) {
+    return formatBookList(books, indent, Book::getBookDetails);
+  }
+
+  public static String listToStringInline(List<Book> books, int indent) {
+    return formatBookList(books, indent, Book::toStringInline);
   }
 
 }

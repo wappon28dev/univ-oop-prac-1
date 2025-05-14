@@ -106,17 +106,34 @@ public class LibraryMember {
     return true;
   }
 
+  // 会員ID、名前、最大貸出冊数、現在の貸出冊数、貸出中の本の詳細（タイトルとISBN）リスト
   public void displayMemberInfo() {
     var msg = String.format(
-        "会員ID: %s<ls>名前: %s<ls>最大貸出冊数: %d<ls>現在の貸出冊数: %d<ls>",
+        "会員ID: %s<ls>名前: %s<ls>最大貸出冊数: %d<ls>現在の貸出冊数: %d",
         this.memberId,
         this.name,
         this.maxBorrowLimit,
-        this.getCurrentBorrowCount());
+        this.getCurrentBorrowCount())
+        .replaceAll("<ls>", System.lineSeparator());
     System.out.println(msg);
+    System.out.println("貸出中の本:");
+    System.out.println(Book.listToStringInline(this.getBorrowedBooksAsList(), 2));
   }
 
   public String toStringInline() {
     return String.format("%s: %s さん", this.name, this.memberId);
   }
+
+  // public static void main(String[] args) {
+  // // test displayMemberInfo
+
+  // var member = new LibraryMember("12345", "山田太郎", 3);
+  // var book1 = new Book("9784106028212", "君たちはどう生きるか", "吉野源三郎");
+  // var book2 = new Book("9784106028229", "ノルウェイの森", "村上春樹");
+  // var book3 = new Book("9784106028236", "コンビニ人間", "村田沙耶香");
+  // member.borrowBook(book1);
+  // member.borrowBook(book2);
+  // member.borrowBook(book3);
+  // member.displayMemberInfo();
+  // }
 }
