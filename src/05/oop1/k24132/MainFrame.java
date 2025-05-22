@@ -6,7 +6,49 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 
-abstract class Shape {
+enum ShapeType {
+  CIRCLE("Circle"),
+  RECTANGLE("Rectangle");
+
+  public final String name;
+
+  ShapeType(String name) {
+    this.name = name;
+  }
+
+  public static ShapeType fromName(String name) {
+    return switch (name) {
+      case "Circle" -> CIRCLE;
+      case "Rectangle" -> RECTANGLE;
+      default -> throw new IllegalArgumentException("Unknown shape type: " + name);
+    };
+  }
+}
+
+enum Colors {
+  RED(Color.RED, "赤"),
+  BLUE(Color.BLUE, "青"),
+  GREEN(Color.GREEN, "緑");
+
+  public final Color value;
+  public final String name;
+
+  Colors(Color color, String name) {
+    this.value = color;
+    this.name = name;
+  }
+
+  public static Colors fromName(String name) {
+    return switch (name) {
+      case "赤" -> RED;
+      case "青" -> BLUE;
+      case "緑" -> GREEN;
+      default -> throw new IllegalArgumentException("Unknown color name: " + name);
+    };
+  }
+}
+
+class Shape {
   protected int x;
   protected int y;
   protected Color color;
@@ -17,10 +59,12 @@ abstract class Shape {
     this.color = color;
   }
 
-  public abstract void draw(Graphics g);
+  public void draw(Graphics g) {
+    throw new UnsupportedOperationException("draw() メソッドはサブクラスで実装してくださいね");
+  };
 
   public int getX() {
-    return x;
+    return this.x;
   }
 
   public void setX(int x) {
@@ -28,7 +72,7 @@ abstract class Shape {
   }
 
   public int getY() {
-    return y;
+    return this.y;
   }
 
   public void setY(int y) {
@@ -36,7 +80,7 @@ abstract class Shape {
   }
 
   public Color getColor() {
-    return color;
+    return this.color;
   }
 
   public void setColor(Color color) {
@@ -53,7 +97,7 @@ class Circle extends Shape {
   }
 
   public int getRadius() {
-    return radius;
+    return this.radius;
   }
 
   public void setRadius(int radius) {
@@ -62,8 +106,8 @@ class Circle extends Shape {
 
   @Override
   public void draw(Graphics g) {
-    g.setColor(color);
-    g.fillOval(x - radius, y - radius, radius * 2, radius * 2);
+    g.setColor(this.color);
+    g.fillOval(this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2);
   }
 }
 
@@ -78,7 +122,7 @@ class Rectangle extends Shape {
   }
 
   public int getWidth() {
-    return width;
+    return this.width;
   }
 
   public void setWidth(int width) {
@@ -86,7 +130,7 @@ class Rectangle extends Shape {
   }
 
   public int getHeight() {
-    return height;
+    return this.height;
   }
 
   public void setHeight(int height) {
@@ -95,8 +139,8 @@ class Rectangle extends Shape {
 
   @Override
   public void draw(Graphics g) {
-    g.setColor(color);
-    g.fillRect(x, y, width, height);
+    g.setColor(this.color);
+    g.fillRect(this.x, this.y, this.width, this.height);
   }
 }
 
@@ -109,28 +153,26 @@ class DrawingPanel extends JPanel {
     shapes = new Shape[0];
     setBackground(Color.WHITE);
 
-    // マウスリスナーを追加してクリックされた位置に図形を追加
-    addMouseListener(new MouseAdapter() {
+    super.addMouseListener(new MouseAdapter() {
       @Override
       public void mousePressed(MouseEvent e) {
-        Shape newShape = null;
-        // currentShapeTypeに応じて適切な図形オブジェクトを生成
-        // たとえば、円が選択されている場合の制御
-        // TODO: ここに追加の実装する
-        if ("Circle".equals(currentShapeType)) {
-          newShape = new Circle(e.getX(), e.getY(), 30, currentColor);
-        }
+        var shape = switch (ShapeType.fromName(currentShapeType)) {
+          case CIRCLE -> new Circle(e.getX(), e.getY(), 30, currentColor);
+          case RECTANGLE -> new Rectangle(e.getX(), e.getY(), 30, 30, currentColor);
+        };
 
-        if (newShape != null) {
-          addShape(newShape);
-          repaint(); // パネルを再描画
-        }
+        addShape(shape);
+        repaint();
       }
     });
   }
 
   public void setCurrentShapeType(String type) {
     this.currentShapeType = type;
+  }
+
+  public void setCurrentShapeType(ShapeType type) {
+    this.currentShapeType = type.name;
   }
 
   public void setCurrentColor(Color color) {
@@ -150,6 +192,7 @@ class DrawingPanel extends JPanel {
 
   public void clearShapes() {
     this.shapes = new Shape[0];
+    this.repaint();
   }
 
   @Override
@@ -162,85 +205,70 @@ class DrawingPanel extends JPanel {
 public class MainFrame extends JFrame {
   private DrawingPanel drawingPanel;
 
-  private void init() {
+  private void initWindow() {
     super.setTitle("図形描画");
     super.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     super.setSize(800, 600);
     super.setLocationRelativeTo(null);
   }
 
-  public MainFrame() {
-    this.init();
-    this.drawingPanel = new DrawingPanel();
+  private DrawingPanel createDrawingPanel() {
+    DrawingPanel panel = new DrawingPanel();
+    // 初期設定：円／青
+    panel.setCurrentShapeType(ShapeType.CIRCLE);
+    panel.setCurrentColor(Colors.BLUE.value);
+    return panel;
+  }
 
-    //////
-    // --- 図形選択ラジオボタン ---
-    JRadioButton circleRadioButton = new JRadioButton("円");
-    circleRadioButton.setActionCommand("Circle"); // アクションコマンドを設定
-    circleRadioButton.setSelected(true); // 最初は円を選択状態にする
-    drawingPanel.setCurrentShapeType("Circle"); // DrawingPanelの初期状態も合わせる
+  private JToolBar createToolBar() {
+    // 図形選択ラジオボタン
+    var circleRadioButton = new JRadioButton("円");
+    circleRadioButton.setActionCommand(ShapeType.CIRCLE.name());
+    circleRadioButton.setSelected(true);
 
-    JRadioButton rectangleRadioButton = new JRadioButton("四角形");
-    rectangleRadioButton.setActionCommand("Rectangle");
+    var rectangleRadioButton = new JRadioButton("四角形");
+    rectangleRadioButton.setActionCommand(ShapeType.RECTANGLE.name());
 
-    // ButtonGroupを作成し、ラジオボタンをグループ化する
-    // これにより、一度に1つのラジオボタンのみが選択されるようになる
     ButtonGroup shapeGroup = new ButtonGroup();
-    shapeGroup.add(circleRadioButton);
-    shapeGroup.add(rectangleRadioButton);
+    var shapeButtons = List.of(circleRadioButton, rectangleRadioButton);
 
-    // ラジオボタン用のアクションリスナー
-    ActionListener shapeSelectionListener = e -> {
-      // 選択されたラジオボタンのアクションコマンドをDrawingPanelに伝える
-      drawingPanel.setCurrentShapeType(e.getActionCommand());
-      // if (e.getSource() == circleRadioButton) でイベントの発生元コンポーネントで条件分岐可能
-    };
-
-    circleRadioButton.addActionListener(shapeSelectionListener);
-    rectangleRadioButton.addActionListener(shapeSelectionListener);
-    // --- ここまで図形選択ラジオボタン ---
-
-    // --- 色選択ラジオボタン ---
-    JRadioButton redRadioButton = new JRadioButton("赤");
-    redRadioButton.setForeground(Color.RED);
-    JRadioButton blueRadioButton = new JRadioButton("青");
-    blueRadioButton.setForeground(Color.BLUE);
-    JRadioButton greenRadioButton = new JRadioButton("緑");
-    greenRadioButton.setForeground(Color.GREEN);
-
-    // ButtonGroupで色選択ラジオボタンをグループ化
-    ButtonGroup colorGroup = new ButtonGroup();
-    colorGroup.add(redRadioButton);
-    colorGroup.add(blueRadioButton);
-    colorGroup.add(greenRadioButton);
-
-    // 初期選択色を設定 (例: 青)
-    blueRadioButton.setSelected(true);
-    drawingPanel.setCurrentColor(Color.BLUE);
-
-    // 色選択ラジオボタン用のアクションリスナー
-    ActionListener colorSelectionListener = e -> {
-      if (e.getSource() == redRadioButton) {
-        drawingPanel.setCurrentColor(Color.RED);
-      }
-
-      // TODO: 他のラジオボタンの処理を実装する
-    };
-
-    redRadioButton.addActionListener(colorSelectionListener);
-    blueRadioButton.addActionListener(colorSelectionListener);
-    greenRadioButton.addActionListener(colorSelectionListener);
-    // --- ここまで色選択ラジオボタン ---
-
-    // --- クリアボタン ---
-    JButton clearButton = new JButton("クリア");
-    clearButton.addActionListener(e -> {
-      // TODO: クリアボタンの処理を実装する
+    shapeButtons.forEach(shapeGroup::add);
+    shapeButtons.forEach(radioButton -> {
+      radioButton.addActionListener(e -> {
+        drawingPanel.setCurrentShapeType(ShapeType.valueOf(e.getActionCommand()));
+      });
     });
-    // --- ここまでクリアボタン ---
 
-    // ツールバーにコンポーネントを配置
-    JToolBar toolBar = new JToolBar();
+    // 色選択ラジオボタン
+    var redRadioButton = new JRadioButton(Colors.RED.name);
+    redRadioButton.setForeground(Colors.RED.value);
+    var blueRadioButton = new JRadioButton(Colors.BLUE.name);
+    blueRadioButton.setForeground(Colors.BLUE.value);
+    var greenRadioButton = new JRadioButton(Colors.GREEN.name);
+    greenRadioButton.setForeground(Colors.GREEN.value);
+
+    var colorButtons = List.of(redRadioButton, blueRadioButton, greenRadioButton);
+    var colorGroup = new ButtonGroup();
+
+    colorButtons.forEach(colorGroup::add);
+    colorButtons.forEach(radioButton -> {
+      radioButton.addActionListener(e -> {
+        var color = Colors.fromName(e.getActionCommand()).value;
+        drawingPanel.setCurrentColor(color);
+      });
+    });
+
+    // 初期設定：円／青
+    drawingPanel.setCurrentShapeType(ShapeType.CIRCLE);
+    drawingPanel.setCurrentColor(Colors.BLUE.value);
+    blueRadioButton.setSelected(true);
+
+    // クリアボタン
+    var clearButton = new JButton("クリア");
+    clearButton.addActionListener(e -> drawingPanel.clearShapes());
+
+    // ツールバー組み立て
+    var toolBar = new JToolBar();
     toolBar.add(new JLabel("図形: "));
     toolBar.add(circleRadioButton);
     toolBar.add(rectangleRadioButton);
@@ -252,9 +280,22 @@ public class MainFrame extends JFrame {
     toolBar.addSeparator();
     toolBar.add(clearButton);
 
-    add(toolBar, BorderLayout.NORTH);
-    add(drawingPanel, BorderLayout.CENTER);
-    //////
+    return toolBar;
+  }
+
+  private void initComponents() {
+    // 描画パネルとツールバーを生成して配置
+    drawingPanel = createDrawingPanel();
+    JToolBar toolBar = createToolBar();
+
+    super.add(toolBar, BorderLayout.NORTH);
+    super.add(drawingPanel, BorderLayout.CENTER);
+  }
+
+  public MainFrame() {
+    initWindow();
+    initComponents();
+
     super.setVisible(true);
   }
 
