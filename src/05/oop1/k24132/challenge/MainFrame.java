@@ -11,7 +11,8 @@ import java.awt.event.*;
 
 enum ShapeType {
   CIRCLE(Circle.class),
-  RECTANGLE(Rectangle.class);
+  RECTANGLE(Rectangle.class),
+  TRIANGLE(Triangle.class);
 
   public final Class<? extends Shape> shapeClass;
 
@@ -23,6 +24,7 @@ enum ShapeType {
     return switch (commandName) {
       case Circle.commandName -> CIRCLE;
       case Rectangle.commandName -> RECTANGLE;
+      case Triangle.commandName -> TRIANGLE;
       default -> throw new IllegalArgumentException("Unknown shape type: " + commandName);
     };
   }
@@ -58,7 +60,7 @@ enum Colors {
   }
 }
 
-abstract class Shape {
+class Shape {
   protected int x;
   protected int y;
   protected Colors color;
@@ -69,7 +71,9 @@ abstract class Shape {
     this.color = color;
   }
 
-  abstract public void draw(Graphics g);
+  public void draw(Graphics g) {
+    throw new UnsupportedOperationException("draw() メソッドはサブクラスで実装してくださいね〜");
+  }
 
   @FunctionalInterface
   public interface Factory {
@@ -77,14 +81,14 @@ abstract class Shape {
   }
 
   public static Factory fromPoints(ShapeType type, Colors color) {
-    throw new UnsupportedOperationException("fromPoints() メソッドはサブクラスで実装してくださいね");
+    throw new UnsupportedOperationException("fromPoints() メソッドはサブクラスで実装してくださいね〜");
   }
 }
 
 class Circle extends Shape {
   public static final String commandName = "Circle";
   public static final String displayName = "円";
-  private int radius;
+  public int radius;
 
   public Circle(int x, int y, int radius, Colors color) {
     super(x, y, color);
@@ -99,14 +103,6 @@ class Circle extends Shape {
       }
       return null;
     };
-  }
-
-  public int getRadius() {
-    return this.radius;
-  }
-
-  public void setRadius(int radius) {
-    this.radius = radius;
   }
 
   @Override
@@ -137,10 +133,10 @@ class Rectangle extends Shape {
 
   public static Shape.Factory fromPoints(Colors color) {
     return (Point p1, Point p2) -> {
-      int x = Math.min(p1.x, p2.x);
-      int y = Math.min(p1.y, p2.y);
-      int w = Math.abs(p1.x - p2.x);
-      int h = Math.abs(p1.y - p2.y);
+      var x = Math.min(p1.x, p2.x);
+      var y = Math.min(p1.y, p2.y);
+      var w = Math.abs(p1.x - p2.x);
+      var h = Math.abs(p1.y - p2.y);
       if (w > 0 && h > 0) {
         return new Rectangle(x, y, w, h, color);
       }
@@ -157,6 +153,65 @@ class Rectangle extends Shape {
   public static JRadioButton toJRadioButton() {
     var radioButton = new JRadioButton(Rectangle.displayName);
     radioButton.setActionCommand(Rectangle.commandName);
+    return radioButton;
+  }
+}
+
+class Triangle extends Shape {
+  public static final String commandName = "Triangle";
+  public static final String displayName = "三角形";
+  private final List<Integer> xPoints;
+  private final List<Integer> yPoints;
+
+  public Triangle(List<Integer> xPoints, List<Integer> yPoints, Colors color) {
+    // NOTE: super の x,y は描画に使ってない（泣）
+    super(xPoints.get(0), yPoints.get(0), color);
+    this.xPoints = xPoints;
+    this.yPoints = yPoints;
+  }
+
+  public static Shape.Factory fromPoints(Colors color) {
+    return (Point p1, Point p2) -> {
+      var x = Math.min(p1.x, p2.x);
+      var y = Math.min(p1.y, p2.y);
+      var width = Math.abs(p2.x - p1.x);
+      var height = Math.abs(p2.y - p1.y);
+      var isValid = (width > 0 && height > 0);
+
+      if (!isValid) {
+        return null;
+      }
+
+      // 頂点
+      var x1 = x + width / 2;
+      var y1 = y;
+
+      // 下端左
+      var x2 = x;
+      var y2 = y + height;
+
+      // 下端右
+      var x3 = x + width;
+      var y3 = y + height;
+
+      return new Triangle(
+          List.of(x1, x2, x3),
+          List.of(y1, y2, y3),
+          color);
+    };
+  }
+
+  @Override
+  public void draw(Graphics g) {
+    g.setColor(this.color.value);
+    var xPoints = this.xPoints.stream().mapToInt(i -> i).toArray();
+    var yPoints = this.yPoints.stream().mapToInt(i -> i).toArray();
+    g.fillPolygon(xPoints, yPoints, 3);
+  }
+
+  public static JRadioButton toJRadioButton() {
+    var radioButton = new JRadioButton(displayName);
+    radioButton.setActionCommand(commandName);
     return radioButton;
   }
 }
@@ -206,6 +261,7 @@ class DrawingPanel extends JPanel {
     var shape = switch (currentShapeType) {
       case CIRCLE -> Circle.fromPoints(currentColor);
       case RECTANGLE -> Rectangle.fromPoints(currentColor);
+      case TRIANGLE -> Triangle.fromPoints(currentColor);
     };
 
     return shape.create(p1, p2);
@@ -259,9 +315,10 @@ public class MainFrame extends JFrame {
     // 図形選択ラジオボタン
     var circleRadioButton = Circle.toJRadioButton();
     var rectangleRadioButton = Rectangle.toJRadioButton();
+    var triangleRadioButton = Triangle.toJRadioButton();
 
     ButtonGroup shapeGroup = new ButtonGroup();
-    var shapeButtons = List.of(circleRadioButton, rectangleRadioButton);
+    var shapeButtons = List.of(circleRadioButton, rectangleRadioButton, triangleRadioButton);
 
     shapeButtons.forEach(shapeGroup::add);
     shapeButtons.forEach(radioButton -> {
@@ -286,8 +343,7 @@ public class MainFrame extends JFrame {
     });
 
     // 初期設定：円／青
-    drawingPanel.currentShapeType = ShapeType.CIRCLE;
-    drawingPanel.currentColor = Colors.BLUE;
+    circleRadioButton.setSelected(true);
     blueRadioButton.setSelected(true);
 
     // クリアボタン
@@ -297,13 +353,10 @@ public class MainFrame extends JFrame {
     // ツールバー組み立て
     var toolBar = new JToolBar();
     toolBar.add(new JLabel("図形: "));
-    toolBar.add(circleRadioButton);
-    toolBar.add(rectangleRadioButton);
+    shapeButtons.forEach(toolBar::add);
     toolBar.addSeparator();
     toolBar.add(new JLabel("色: "));
-    toolBar.add(redRadioButton);
-    toolBar.add(blueRadioButton);
-    toolBar.add(greenRadioButton);
+    colorButtons.forEach(toolBar::add);
     toolBar.addSeparator();
     toolBar.add(clearButton);
 
