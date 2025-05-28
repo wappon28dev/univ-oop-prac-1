@@ -1,4 +1,4 @@
-package oop1.kadai06;
+package oop1.kadai06.challenge_fake;
 
 import javax.swing.*;
 import java.awt.*;
@@ -205,48 +205,18 @@ public class SalarySimulatorFrame extends JFrame {
   private class CalculateButtonListener implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
-      try {
-        var employeeType = (String) employeeTypeComboBox.getSelectedItem();
-        var id = employeeIdField.getText();
-        var name = nameField.getText();
+      var employeeType = (String) employeeTypeComboBox.getSelectedItem();
+      var id = employeeIdField.getText();
+      var name = nameField.getText();
 
-        if (id.isEmpty() || name.isEmpty() || basePayField.getText().isEmpty()) {
-          System.err.println("入力エラー: ID, 氏名, 基本給/時給は必須入力です。");
-          return;
-        }
+      var employee = Employee.from(id, name, basePayField.getText());
+      var employeeImpl = switch (EmployeeType.from(employeeType)) {
+        case FULL_TIME -> FullTimeEmployee.from(employee, overtimeHoursField.getText(), bonusField.getText(),
+            commuteAllowanceField.getText());
+        case PART_TIME -> PartTimeEmployee.from(employee, hoursWorkedField.getText());
+      };
 
-        var basePay = Double.parseDouble(basePayField.getText());
-        Employee employee = null;
-
-        if ("正社員".equals(employeeType)) {
-          if (overtimeHoursField.getText().isEmpty() || bonusField.getText().isEmpty()
-              || commuteAllowanceField.getText().isEmpty()) {
-            System.err.println("入力エラー: 正社員の場合、残業時間、賞与、交通費は必須入力です。");
-            return;
-          }
-          var overtimeHours = Double.parseDouble(overtimeHoursField.getText());
-          var bonus = Double.parseDouble(bonusField.getText());
-          var commuteAllowance = Double.parseDouble(commuteAllowanceField.getText());
-          employee = new FullTimeEmployee(id, name, basePay, overtimeHours, bonus, commuteAllowance);
-        } else if ("アルバイト".equals(employeeType)) {
-          if (hoursWorkedField.getText().isEmpty()) {
-            System.err.println("入力エラー: アルバイトの場合、労働時間は必須入力です。");
-            return;
-          }
-          var hoursWorked = Double.parseDouble(hoursWorkedField.getText());
-          employee = new PartTimeEmployee(id, name, basePay, hoursWorked);
-        }
-
-        if (employee != null) {
-          paySlipPanel.displayPaySlip(employee);
-        }
-      } catch (NumberFormatException ex) {
-        System.err.println("入力エラー: 数値入力フィールドに有効な数値を入力してください。");
-        ex.printStackTrace();
-      } catch (Exception ex) {
-        System.err.println("エラーが発生しました: " + ex.getMessage());
-        ex.printStackTrace();
-      }
+      paySlipPanel.displayPaySlip(employeeImpl);
     }
   }
 
