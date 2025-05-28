@@ -57,7 +57,7 @@ public class SalarySimulatorFrame extends JFrame {
     attachListeners();
 
     // 初期状態でアルバイト用のフィールドを非表示にする
-    updateInputFieldsVisibility("正社員"); // 初期選択は正社員に合わせる
+    updateInputFieldsVisibility((String) employeeTypeComboBox.getSelectedItem());
   }
 
   /**
@@ -205,9 +205,52 @@ public class SalarySimulatorFrame extends JFrame {
   private class CalculateButtonListener implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
-      // TODO: 給与計算処理を行い、画面表示させる
-      // 従業員の種別を判別するコンボボックスから、従業員の種別を取得し、
-      // 種別ごとのオブジェクトを生成、PaySlipPanelに渡す。
+      try {
+        String employeeType = (String) employeeTypeComboBox.getSelectedItem();
+        String id = employeeIdField.getText();
+        String name = nameField.getText();
+
+        if (id.isEmpty() || name.isEmpty() || basePayField.getText().isEmpty()) {
+          JOptionPane.showMessageDialog(SalarySimulatorFrame.this, "ID, 氏名, 基本給/時給は必須入力です。", "入力エラー",
+              JOptionPane.ERROR_MESSAGE);
+          return;
+        }
+
+        double basePay = Double.parseDouble(basePayField.getText());
+        Employee employee = null;
+
+        if ("正社員".equals(employeeType)) {
+          if (overtimeHoursField.getText().isEmpty() || bonusField.getText().isEmpty()
+              || commuteAllowanceField.getText().isEmpty()) {
+            JOptionPane.showMessageDialog(SalarySimulatorFrame.this, "正社員の場合、残業時間、賞与、交通費は必須入力です。", "入力エラー",
+                JOptionPane.ERROR_MESSAGE);
+            return;
+          }
+          double overtimeHours = Double.parseDouble(overtimeHoursField.getText());
+          double bonus = Double.parseDouble(bonusField.getText());
+          double commuteAllowance = Double.parseDouble(commuteAllowanceField.getText());
+          employee = new FullTimeEmployee(id, name, basePay, overtimeHours, bonus, commuteAllowance);
+        } else if ("アルバイト".equals(employeeType)) {
+          if (hoursWorkedField.getText().isEmpty()) {
+            JOptionPane.showMessageDialog(SalarySimulatorFrame.this, "アルバイトの場合、労働時間は必須入力です。", "入力エラー",
+                JOptionPane.ERROR_MESSAGE);
+            return;
+          }
+          double hoursWorked = Double.parseDouble(hoursWorkedField.getText());
+          employee = new PartTimeEmployee(id, name, basePay, hoursWorked);
+        }
+
+        if (employee != null) {
+          paySlipPanel.displayPaySlip(employee);
+        }
+      } catch (NumberFormatException ex) {
+        JOptionPane.showMessageDialog(SalarySimulatorFrame.this, "数値入力フィールドに有効な数値を入力してください。", "入力エラー",
+            JOptionPane.ERROR_MESSAGE);
+      } catch (Exception ex) {
+        JOptionPane.showMessageDialog(SalarySimulatorFrame.this, "エラーが発生しました: " + ex.getMessage(), "エラー",
+            JOptionPane.ERROR_MESSAGE);
+        ex.printStackTrace();
+      }
     }
   }
 
@@ -218,7 +261,16 @@ public class SalarySimulatorFrame extends JFrame {
   private class ClearButtonListener implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
-      // TODO: すべてのコンポーネントを初期化（未入力状態または初期状態に変更）する処理を実装する
+      employeeIdField.setText("");
+      nameField.setText("");
+      basePayField.setText("");
+      overtimeHoursField.setText("");
+      bonusField.setText("");
+      commuteAllowanceField.setText("");
+      hoursWorkedField.setText("");
+      employeeTypeComboBox.setSelectedIndex(0); // "正社員" をデフォルトに
+      paySlipPanel.clearPaySlip();
+      updateInputFieldsVisibility((String) employeeTypeComboBox.getSelectedItem());
     }
   }
 
