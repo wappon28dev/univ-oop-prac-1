@@ -107,10 +107,11 @@ public class FullTimeEmployee implements EmployeeImpl, CommuteAllowanceCalculabl
   }
 
   public double calculateOvertimePay() {
-    if (STANDARD_MONTHLY_HOURS <= 0) {
+    try {
+      return (this.employee.basePay() / STANDARD_MONTHLY_HOURS) * OVERTIME_RATE_MULTIPLIER * this.overtimeHours;
+    } catch (ArithmeticException e) {
       return 0.0;
     }
-    return (this.employee.basePay() / STANDARD_MONTHLY_HOURS) * OVERTIME_RATE_MULTIPLIER * this.overtimeHours;
   }
 
   public double calculateSocialInsurance() {
