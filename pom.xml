@@ -115,6 +115,7 @@
                 <source>src/04</source>
                 <source>src/05</source>
                 <source>src/06</source>
+                <source>src/07</source>
                 <!-- 必要な分だけ追加 -->
               </sources>
             </configuration>
