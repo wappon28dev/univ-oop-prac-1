@@ -5,6 +5,7 @@ import java.util.Scanner; // このライブラリをStandardInputクラスで�
 public class StandardInput {
   public static void main(String[] args) {
     // 標準入力をScannerで取得する
+    @SuppressWarnings("resource")
     Scanner in = new Scanner(System.in);
     // nextLine()メソッドは、キーボードからReturnキーの入力があるまで待ち、入力された1行を返す
     String inputLine = in.nextLine();
