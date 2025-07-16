@@ -7,6 +7,7 @@ import javax.swing.tree.DefaultTreeModel;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 
 class StudentTableModel extends AbstractTableModel {
     private final String[] columnNames = { "学生ID", "名前", "学年" };
